@@ -1,5 +1,5 @@
-use std::fs::read_to_string;
 use std::collections::HashMap;
+use std::fs::read_to_string;
 
 fn read_lines(filename: &str) -> Vec<String> {
     read_to_string(filename)
@@ -62,7 +62,10 @@ impl Coord {
     pub fn neighbors(&self) -> Vec<Coord> {
         Coord::directions()
             .iter()
-            .map(|c| Coord { row: self.row + c.row, col: self.col + c.col })
+            .map(|c| Coord {
+                row: self.row + c.row,
+                col: self.col + c.col,
+            })
             .collect()
     }
 
