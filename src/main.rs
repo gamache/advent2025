@@ -14,9 +14,11 @@ mod day01;
 mod day02;
 mod day03;
 mod day04;
+mod day05;
 
 fn main() {
-    day04::run(&read_lines("inputs/test04.txt"));
+    day05::run(&read_to_string("inputs/test05.txt").unwrap());
+    day05::run(&read_to_string("inputs/day05.txt").unwrap());
     day04::run(&read_lines("inputs/day04.txt"));
     day03::run(&read_lines("inputs/day03.txt"));
     day02::run(&read_to_string("inputs/day02.txt").unwrap());
