@@ -13,26 +13,8 @@ fn part1(grid: &Grid) {
         beams: vec![start],
         splits: 0,
     };
-    let start_splitters = count_splitters(grid);
     manifold.run();
-    let end_splitters = count_splitters(&manifold.grid);
-    manifold.grid.print();
-
-    // two ways of counting splits, off by one, both wrong :(
     println!("day 07 part 1: {}", manifold.splits);
-    // 1528 too low
-    println!("day 07 part 1: {}", start_splitters - end_splitters);
-    // 1529 too low
-}
-
-fn count_splitters(grid: &Grid) -> usize {
-    let mut count = 0usize;
-    for coord in grid.all_coords() {
-        if grid.coords.get(&coord) == Some(&String::from("^")) {
-            count += 1;
-        }
-    }
-    count
 }
 
 struct Manifold {
@@ -54,14 +36,8 @@ impl Manifold {
                 self.splits += 1;
                 new_beams.push(down.left());
                 new_beams.push(down.right());
-
-                self.grid.coords.insert(down.left(), String::from("|"));
-                self.grid.coords.insert(down.right(), String::from("|"));
-                self.grid.coords.insert(down, String::from("X"));
             } else {
                 new_beams.push(down);
-
-                self.grid.coords.insert(down, String::from("|"));
             }
         }
         new_beams.sort();
