@@ -16,8 +16,11 @@ mod day03;
 mod day04;
 mod day05;
 mod day06;
+mod day07;
 
 fn main() {
+    day07::run(&read_lines("inputs/test07.txt"));
+    day07::run(&read_lines("inputs/day07.txt"));
     day06::run(&read_to_string("inputs/day06.txt").unwrap());
     day05::run(&read_to_string("inputs/day05.txt").unwrap());
     day04::run(&read_lines("inputs/day04.txt"));
@@ -26,7 +29,7 @@ fn main() {
     day01::run(&read_lines("inputs/day01.txt"));
 }
 
-#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy, Ord, PartialOrd)]
 pub struct Coord {
     pub row: i32,
     pub col: i32,
