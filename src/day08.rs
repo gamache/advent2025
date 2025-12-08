@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub fn run(lines: &Vec<String>) {
     let coords: Vec<Coord3> = lines
@@ -23,8 +23,7 @@ struct Coord3 {
 }
 impl Coord3 {
     pub fn distance(c1: &Coord3, c2: &Coord3) -> f64 {
-        let square =
-            (c1.x - c2.x).pow(2) + (c1.y - c2.y).pow(2) + (c1.z - c2.z).pow(2);
+        let square = (c1.x - c2.x).pow(2) + (c1.y - c2.y).pow(2) + (c1.z - c2.z).pow(2);
         (square as f64).sqrt()
     }
 }
@@ -33,6 +32,7 @@ impl Coord3 {
 struct Boxes {
     coords: Vec<Coord3>,
     circuits: HashMap<Coord3, usize>,
+    circuit_index: usize,
     distances: Vec<(f64, Coord3, Coord3)>,
 }
 impl Boxes {
@@ -47,74 +47,82 @@ impl Boxes {
                 distances.push((d, c1.clone(), c2.clone()));
             }
         }
-        distances.sort_by(|(ad,_,_),(bd,_,_)| ad.total_cmp(bd));
+
+        // longest first
+        distances.sort_by(|(ad, _, _), (bd, _, _)| bd.total_cmp(ad));
+
         Self {
             coords: coords,
             circuits: HashMap::new(),
-            distances: distances
+            circuit_index: 0,
+            distances: distances,
         }
     }
 
     pub fn tick(&mut self) {
-        
+        if self.distances.len() == 0 {
+            return;
+        }
+        let (_d, c1, c2) = self.distances.remove(self.distances.len() - 1);
+        self.connect(&c1, &c2);
     }
 
     fn connected(&self, c1: &Coord3, c2: &Coord3) -> bool {
-        self.circuit_index_for(c1) == self.circuit_index_for(c2)
-    }
-
-    fn circuit_index_for(&self, c: &Coord3) -> Option<usize> {
-        let mut i = 0usize;
-        for circuit in &self.circuits {
-            if circuit.contains(c) {
-                return Some(i);
-            }
-            i += 1;
-        }
-        None
+        self.circuits.get(c1) == self.circuits.get(c2)
     }
 
     fn connect(&mut self, c1: &Coord3, c2: &Coord3) {
-        let i1 = self.circuit_index_for(c1);
-        let i2 = self.circuit_index_for(c2);
         let mut circuits = self.circuits.clone();
+        let i1 = self.circuits.get(c1);
+        let i2 = self.circuits.get(c2);
 
         match (i1, i2) {
             (Some(i), Some(j)) if i == j => {
                 // already connected, nothing to do
             }
             (Some(i), Some(j)) => {
-                let mut low = i;
-                let mut high = j;
-                if j < i {
-                    low = j;
-                    high = i;
+                for (coord, circuit) in &self.circuits {
+                    if *circuit == *j {
+                        circuits.insert(coord.clone(), *i);
+                    }
                 }
-                let lowcircuit = &mut circuits[low];
-                let highcircuit = &circuits[high];
-                for tuple in highcircuit.iter() {
-                    lowcircuit.insert(tuple.clone());
-                }
-                circuits.remove(high);
             }
             (Some(i), None) | (None, Some(i)) => {
-                let circuit = &mut circuits[i];
-                circuit.insert(c1.clone());
-                circuit.insert(c2.clone());
+                circuits.insert(c1.clone(), *i);
+                circuits.insert(c2.clone(), *i);
             }
             (None, None) => {
-                let mut circuit: HashSet<Coord3> = HashSet::new();
-                circuit.insert(c1.clone());
-                circuit.insert(c2.clone());
-                circuits.push(circuit);
+                circuits.insert(c1.clone(), self.circuit_index);
+                circuits.insert(c2.clone(), self.circuit_index);
+                self.circuit_index += 1;
             }
         }
         self.circuits = circuits;
+    }
+
+    pub fn circuit_lengths(&self) -> HashMap<usize, usize> {
+        let mut output = HashMap::new();
+        for (_coord, circuit) in &self.circuits {
+            let new_count = match output.get(circuit) {
+                Some(n) => n + 1,
+                None => 1,
+            };
+            output.insert(*circuit, new_count);
+        }
+        output
     }
 }
 
 fn part1(coords: &Vec<Coord3>) {
     let mut boxes = Boxes::new(coords.clone());
-    println!("{:?}", boxes.distances);
-    println!("{}", boxes.distances.len());
+    for _ in 0..1000 {
+        boxes.tick();
+    }
+    let mut lengths: Vec<usize> = boxes
+        .circuit_lengths()
+        .iter()
+        .map(|(_circuit, length)| *length)
+        .collect();
+    lengths.sort_by(|a, b| b.cmp(a));
+    println!("day 08 part 1: {}", lengths[0] * lengths[1] * lengths[2]);
 }
