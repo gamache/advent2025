@@ -39,7 +39,6 @@ fn part2(coords: &Vec<Coord3>) {
         boxes.tick();
     }
     println!("day 08 part 2: {}", boxes.last_x_times_x);
-    // 7230515344 too high
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
