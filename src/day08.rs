@@ -13,6 +13,33 @@ pub fn run(lines: &Vec<String>) {
         })
         .collect();
     part1(&coords);
+    part2(&coords);
+}
+
+fn part1(coords: &Vec<Coord3>) {
+    let mut boxes = Boxes::new(coords.clone());
+    for _ in 0..1000 {
+        boxes.tick();
+    }
+    let mut lengths: Vec<usize> = boxes
+        .circuit_lengths()
+        .iter()
+        .map(|(_circuit, length)| *length)
+        .collect();
+    lengths.sort_by(|a, b| b.cmp(a));
+    println!("day 08 part 1: {}", lengths[0] * lengths[1] * lengths[2]);
+}
+
+fn part2(coords: &Vec<Coord3>) {
+    let mut boxes = Boxes::new(coords.clone());
+    loop {
+        if boxes.distances.len() == 0 {
+            break;
+        }
+        boxes.tick();
+    }
+    println!("day 08 part 2: {}", boxes.last_x_times_x);
+    // 7230515344 too high
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -30,10 +57,11 @@ impl Coord3 {
 
 #[derive(Debug, Clone)]
 struct Boxes {
-    coords: Vec<Coord3>,
     circuits: HashMap<Coord3, usize>,
     circuit_index: usize,
     distances: Vec<(f64, Coord3, Coord3)>,
+    last_x_times_x: i64,
+    circuit_count: usize,
 }
 impl Boxes {
     pub fn new(coords: Vec<Coord3>) -> Self {
@@ -52,10 +80,11 @@ impl Boxes {
         distances.sort_by(|(ad, _, _), (bd, _, _)| bd.total_cmp(ad));
 
         Self {
-            coords: coords,
             circuits: HashMap::new(),
             circuit_index: 0,
             distances: distances,
+            last_x_times_x: 0,
+            circuit_count: 0,
         }
     }
 
@@ -67,16 +96,12 @@ impl Boxes {
         self.connect(&c1, &c2);
     }
 
-    fn connected(&self, c1: &Coord3, c2: &Coord3) -> bool {
-        self.circuits.get(c1) == self.circuits.get(c2)
-    }
-
     fn connect(&mut self, c1: &Coord3, c2: &Coord3) {
         let mut circuits = self.circuits.clone();
-        let i1 = self.circuits.get(c1);
-        let i2 = self.circuits.get(c2);
+        let circuit1 = self.circuits.get(c1);
+        let circuit2 = self.circuits.get(c2);
 
-        match (i1, i2) {
+        match (circuit1, circuit2) {
             (Some(i), Some(j)) if i == j => {
                 // already connected, nothing to do
             }
@@ -86,15 +111,18 @@ impl Boxes {
                         circuits.insert(coord.clone(), *i);
                     }
                 }
+                self.circuit_count -= 1;
             }
             (Some(i), None) | (None, Some(i)) => {
                 circuits.insert(c1.clone(), *i);
                 circuits.insert(c2.clone(), *i);
+                self.last_x_times_x = c1.x * c2.x;
             }
             (None, None) => {
                 circuits.insert(c1.clone(), self.circuit_index);
                 circuits.insert(c2.clone(), self.circuit_index);
                 self.circuit_index += 1;
+                self.circuit_count += 1;
             }
         }
         self.circuits = circuits;
@@ -111,18 +139,4 @@ impl Boxes {
         }
         output
     }
-}
-
-fn part1(coords: &Vec<Coord3>) {
-    let mut boxes = Boxes::new(coords.clone());
-    for _ in 0..1000 {
-        boxes.tick();
-    }
-    let mut lengths: Vec<usize> = boxes
-        .circuit_lengths()
-        .iter()
-        .map(|(_circuit, length)| *length)
-        .collect();
-    lengths.sort_by(|a, b| b.cmp(a));
-    println!("day 08 part 1: {}", lengths[0] * lengths[1] * lengths[2]);
 }
