@@ -3,8 +3,10 @@ use std::{
     collections::{BinaryHeap, HashSet},
 };
 
+/*
 use ndarray::prelude::*;
 use ndarray_linalg::Solve;
+ */
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -15,6 +17,7 @@ pub fn run(lines: &Vec<String>) {
     // let part2: usize = machines.par_iter().map(|m| m.minimum_presses_2()).sum();
     // println!("day 10 part 2: {}", part2);
 
+    /*
     let a: Array2<f64> = array![
         [1., 1., 1., 0.],
         [1., 0., 1., 1.],
@@ -26,6 +29,7 @@ pub fn run(lines: &Vec<String>) {
     let b: Array1<f64> = array![10., 11., 11., 5., 10., 5.];
     let x = a.solve_into(b);
     println!("{:?}", x);
+     */
 }
 
 #[derive(Debug)]
