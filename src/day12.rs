@@ -60,9 +60,7 @@ impl From<&str> for Region {
 }
 impl Ord for Region {
     fn cmp(&self, other: &Self) -> Ordering {
-        let area = self.rowmax * self.colmax;
-        let other_area = other.rowmax * other.colmax;
-        other_area.cmp(&area)
+        other.cost().cmp(&self.cost())
     }
 }
 impl PartialOrd for Region {
@@ -71,6 +69,9 @@ impl PartialOrd for Region {
     }
 }
 impl Region {
+    pub fn cost(&self) -> usize {
+        self.rowmax + self.colmax
+    }
     pub fn can_fit(&self, presents: &Vec<Grid>) -> bool {
         let mut heap = BinaryHeap::new();
         heap.push(self.clone());
@@ -78,12 +79,13 @@ impl Region {
         while let Some(region) = heap.pop() {
             // println!("\nregion:");
             // region.grid.print();
+            // println!("popped region cost={}", region.cost());
             for (i, present) in presents.iter().enumerate() {
                 if region.present_counts[i] == 0 {
                     continue;
                 }
-                for perm in present.permutations() {
-                    'row: for row in 0..region.grid.nrows {
+                'perm: for perm in present.permutations() {
+                    for row in 0..region.grid.nrows {
                         for col in 0..region.grid.ncols {
                             let coord = Coord {
                                 row: row as i32,
@@ -108,13 +110,15 @@ impl Region {
                                     cmp::max(region.rowmax, coord.row as usize + perm.nrows);
                                 let colmax =
                                     cmp::max(region.colmax, coord.col as usize + perm.ncols);
-                                heap.push(Region {
+                                let region = Region {
                                     grid,
                                     present_counts,
                                     rowmax,
                                     colmax,
-                                });
-                                continue 'row;
+                                };
+                                // println!("pushing region cost={}", region.cost());
+                                heap.push(region);
+                                continue 'perm;
                             }
                         }
                     }
