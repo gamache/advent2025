@@ -21,9 +21,11 @@ mod day08;
 mod day09;
 mod day10;
 mod day11;
+mod day12;
 
 fn main() {
-    // day11::run(&read_lines("inputs/test11.txt"));
+    day12::run(&read_to_string("inputs/test12.txt").unwrap());
+    day12::run(&read_to_string("inputs/day12.txt").unwrap());
     day11::run(&read_lines("inputs/day11.txt"));
     day10::run(&read_lines("inputs/test10.txt"));
     day10::run(&read_lines("inputs/day10.txt"));
@@ -124,7 +126,7 @@ impl Coord {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Grid {
     pub coords: HashMap<Coord, String>,
     pub nrows: usize,
@@ -208,5 +210,96 @@ impl Grid {
             && coord.row < self.nrows as i32
             && coord.col >= 0
             && coord.col < self.ncols as i32
+    }
+
+    pub fn clockwise(&self) -> Grid {
+        let mut out = Grid {
+            coords: HashMap::new(),
+            ncols: self.ncols,
+            nrows: self.nrows,
+        };
+        for (coord, s) in &self.coords {
+            out.coords.insert(
+                Coord {
+                    row: coord.col,
+                    col: self.nrows as i32 - coord.row - 1,
+                },
+                s.clone(),
+            );
+        }
+        out
+    }
+
+    pub fn flip(&self) -> Grid {
+        let mut out = Grid {
+            coords: HashMap::new(),
+            ncols: self.ncols,
+            nrows: self.nrows,
+        };
+        for (coord, s) in &self.coords {
+            out.coords.insert(
+                Coord {
+                    row: self.nrows as i32 - coord.row - 1,
+                    col: coord.col,
+                },
+                s.clone(),
+            );
+        }
+        out
+    }
+
+    pub fn permutations(&self) -> Vec<Grid> {
+        vec![
+            self.clone(),
+            self.clockwise(),
+            self.clockwise().clockwise(),
+            self.clockwise().clockwise().clockwise(),
+            self.flip(),
+            self.flip().clockwise(),
+            self.flip().clockwise().clockwise(),
+            self.flip().clockwise().clockwise().clockwise(),
+        ]
+    }
+
+    // Can `other` be overlaid onto `self` with its top left corner at `at`?
+    pub fn can_place(&self, other: &Grid, at: &Coord) -> bool {
+        for (other_coord, other_str) in &other.coords {
+            match other_str.as_ref() {
+                " " => continue,
+                "." => continue,
+                _ => (),
+            }
+            let row = at.row + other_coord.row;
+            let col = at.col + other_coord.col;
+            if row >= self.nrows as i32 || col >= self.ncols as i32 {
+                return false;
+            }
+            match self.coords.get(&Coord { row: row, col: col }) {
+                None => continue,
+                Some(s) => match s.as_ref() {
+                    "." => continue,
+                    " " => continue,
+                    _ => return false,
+                },
+            }
+        }
+        true
+    }
+
+    pub fn place(&mut self, other: &Grid, at: &Coord) {
+        for (coord, s) in &other.coords {
+            match s.as_ref() {
+                " " => continue,
+                "." => continue,
+                _ => (),
+            }
+            self.coords.insert(
+                Coord {
+                    row: at.row + coord.row,
+                    col: at.col + coord.col,
+                },
+                s.clone(),
+            );
+        }
     }
 }
