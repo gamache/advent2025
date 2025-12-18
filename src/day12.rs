@@ -24,7 +24,7 @@ pub fn run(input: &String) {
         .map(|line| Region::from(line))
         .collect();
 
-    let fit_count: usize = regions.iter().filter(|r| r.can_fit(&presents)).count();
+    let fit_count: usize = regions.par_iter().filter(|r| r.can_fit(&presents)).count();
     println!("day 12 part 1: {}", fit_count);
 }
 
@@ -34,6 +34,7 @@ struct Region {
     present_counts: Vec<usize>,
     rowmax: usize,
     colmax: usize,
+    presents_placed: usize,
 }
 impl From<&str> for Region {
     fn from(line: &str) -> Self {
@@ -55,12 +56,16 @@ impl From<&str> for Region {
             present_counts: present_counts,
             rowmax: 0,
             colmax: 0,
+            presents_placed: 0,
         }
     }
 }
 impl Ord for Region {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost().cmp(&self.cost())
+        match self.presents_placed.cmp(&other.presents_placed) {
+            Ordering::Equal => self.density().total_cmp(&other.density()),
+            x => x,
+        }
     }
 }
 impl PartialOrd for Region {
@@ -69,21 +74,40 @@ impl PartialOrd for Region {
     }
 }
 impl Region {
-    pub fn cost(&self) -> usize {
-        self.rowmax + self.colmax
+    pub fn density(&self) -> f64 {
+        let mut count = 0usize;
+        for row in 0..(self.rowmax as i32) {
+            for col in 0..(self.colmax as i32) {
+                match self.grid.coords.get(&Coord { row: row, col: col }) {
+                    None => (),
+                    Some(s) => match s.as_ref() {
+                        "#" => {
+                            count += 1;
+                        }
+                        _ => (),
+                    },
+                }
+            }
+        }
+        count as f64 / (self.rowmax * self.colmax) as f64
     }
+
     pub fn can_fit(&self, presents: &Vec<Grid>) -> bool {
         let mut heap = BinaryHeap::new();
         heap.push(self.clone());
 
+        let mut placed_so_far = 0;
         while let Some(region) = heap.pop() {
-            // println!("\nregion:");
-            // region.grid.print();
-            // println!("popped region cost={}", region.cost());
             for (i, present) in presents.iter().enumerate() {
                 if region.present_counts[i] == 0 {
                     continue;
                 }
+
+                // if 2 seems magic here, it is
+                if placed_so_far > 2 + region.presents_placed {
+                    return false;
+                }
+                placed_so_far = region.presents_placed;
                 'perm: for perm in present.permutations() {
                     for row in 0..region.grid.nrows {
                         for col in 0..region.grid.ncols {
@@ -92,20 +116,15 @@ impl Region {
                                 col: col as i32,
                             };
                             if region.grid.can_place(&perm, &coord) {
-                                // perm.print();
-                                // println!("can place at {:?}", coord);
                                 let mut present_counts = region.present_counts.clone();
                                 present_counts[i] -= 1;
-                                // println!("{:?}", present_counts);
 
                                 let mut grid = region.grid.clone();
                                 grid.place(&perm, &coord);
-                                // grid.print();
                                 if present_counts.iter().sum::<usize>() == 0 {
-                                    println!("FOCK YEAH");
-                                    grid.print();
                                     return true;
                                 }
+
                                 let rowmax =
                                     cmp::max(region.rowmax, coord.row as usize + perm.nrows);
                                 let colmax =
@@ -115,8 +134,8 @@ impl Region {
                                     present_counts,
                                     rowmax,
                                     colmax,
+                                    presents_placed: region.presents_placed + 1,
                                 };
-                                // println!("pushing region cost={}", region.cost());
                                 heap.push(region);
                                 continue 'perm;
                             }
